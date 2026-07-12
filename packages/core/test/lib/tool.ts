@@ -2,7 +2,6 @@ import { AgentV2 } from "@opencode-ai/core/agent"
 import type { PermissionV2 } from "@opencode-ai/core/permission"
 import { SessionMessage } from "@opencode-ai/core/session/message"
 import { ToolRegistry } from "@opencode-ai/core/tool/registry"
-import { Tool } from "@opencode-ai/core/tool/tool"
 import { Tools } from "@opencode-ai/core/tool/tools"
 import type { Context as PluginContext } from "@opencode-ai/plugin/v2/effect/plugin"
 import { Effect, type Scope } from "effect"
@@ -46,24 +45,7 @@ export const registerToolPlugin = <R>(plugin: {
     const context = host({
       tool: {
         transform: (callback) =>
-          Effect.gen(function* () {
-            const registrations: Array<{
-              readonly name: string
-              readonly tool: Tool.AnyTool
-              readonly options?: Tool.RegisterOptions
-            }> = []
-            callback({
-              add: (name, tool, options) => {
-                registrations.push({ name, tool, ...(options ? { options } : {}) })
-              },
-            })
-            yield* Effect.forEach(
-              registrations,
-              (registration) => tools.register({ [registration.name]: registration.tool }, registration.options),
-              { discard: true },
-            ).pipe(Effect.orDie)
-            return { dispose: Effect.void }
-          }),
+          Tools.registerDraft(tools, callback).pipe(Effect.orDie, Effect.as({ dispose: Effect.void })),
         hook: () => Effect.die("registerToolPlugin does not support tool hooks"),
       },
     })

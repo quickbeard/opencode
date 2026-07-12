@@ -14,3 +14,11 @@ export interface Interface {
 
 /** Narrow registration-only Location capability. */
 export class Service extends Context.Service<Service, Interface>()("@opencode/v2/Tools") {}
+
+/** Register every tool declared by a draft callback against a registration service. */
+export const registerDraft = (service: Interface, callback: (draft: Tool.ToolDraft) => void) =>
+  Effect.forEach(
+    Tool.fromDraft(callback),
+    (registration) => service.register({ [registration.name]: registration.tool }, registration.options),
+    { discard: true },
+  )
